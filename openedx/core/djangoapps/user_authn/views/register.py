@@ -600,6 +600,14 @@ class RegistrationView(APIView):
         if response:
             return response
 
+
+        # Added by Mahendra
+        email = data.get('email')
+        domain = email.split('@')[-1]
+        if domain in settings.RESTRICTED_REGISTRATION_DOMAINS:
+            errors= {'email': [{'user_message': _("Please enter a business email address. We do not offer a free demo for individuals, only for employees representing a company.")}]}
+            return self._create_response(request, errors, status_code=400, error_code="invalid_email_error")
+
         response, user = self._create_account(request, data)
         if response:
             return response
@@ -833,6 +841,10 @@ class RegistrationValidationView(APIView):
         email_exists_error = get_email_existence_validation_error(email)
         # We prefer seeing for invalidity first.
         # Some invalid emails (like a blank one for superusers) may exist.
+        # Added by Mahendra
+        domain = email.split('@')[-1]
+        if domain in settings.RESTRICTED_REGISTRATION_DOMAINS:
+            return _("Please enter a business email address. We do not offer a free demo for individuals, only for employees representing a company.")
         return invalid_email_error or email_exists_error
 
     def confirm_email_handler(self, request):

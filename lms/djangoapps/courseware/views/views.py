@@ -841,7 +841,6 @@ def course_about(request, course_id):  # pylint: disable=too-many-statements
                 )
 
         registration_price, course_price = get_course_prices(course)  # lint-amnesty, pylint: disable=unused-variable
-
         # Used to provide context to message to student if enrollment not allowed
         can_enroll = bool(request.user.has_perm(ENROLL_IN_COURSE, course))
         invitation_only = course_is_invitation_only(course)
@@ -865,6 +864,18 @@ def course_about(request, course_id):  # pylint: disable=too-many-statements
 
         allow_anonymous = check_public_access(course, [COURSE_VISIBILITY_PUBLIC, COURSE_VISIBILITY_PUBLIC_OUTLINE])
 
+        # Added by Mahendra
+        from shoppingcart.models import  Order, PaidCourseRegistration, CourseRegCodeItem
+        can_add_course_to_cart = registration_price and not ecommerce_checkout_link
+        in_cart = False
+        reg_then_add_to_cart_link = ""
+        if request.user.is_authenticated:
+            cart = Order.get_cart_for_user(request.user)
+            in_cart = PaidCourseRegistration.contained_in_order(cart, course_key) or CourseRegCodeItem.contained_in_order(cart, course_key)
+
+        reg_then_add_to_cart_link = "{reg_url}?course_id={course_id}&enrollment_action=add_to_cart".format(
+            reg_url=reverse('register_user'), course_id=(str(course_id))
+        )
         context = {
             'course': course,
             'course_details': course_details,
@@ -891,6 +902,10 @@ def course_about(request, course_id):  # pylint: disable=too-many-statements
             'course_image_urls': overview.image_urls,
             'sidebar_html_enabled': sidebar_html_enabled,
             'allow_anonymous': allow_anonymous,
+            'can_add_course_to_cart': can_add_course_to_cart,
+            'cart_link': reverse('shoppingcart:shoppingcart.views.show_cart'),
+            'reg_then_add_to_cart_link': reg_then_add_to_cart_link,
+            'in_cart': in_cart,
         }
 
         course_about_template = 'courseware/course_about.html'

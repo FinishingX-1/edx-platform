@@ -362,6 +362,7 @@ class RegistrationFormFactory:
             "profession",
             "specialty",
             "marketing_emails_opt_in",
+            "receive_promotions",
         ]
 
         if settings.ENABLE_COPPA_COMPLIANCE and 'year_of_birth' in self.EXTRA_FIELDS:
@@ -1107,6 +1108,31 @@ class RegistrationFormFactory:
                 "required": error_msg
             },
         )
+
+
+    # Added by Developer
+    def _add_receive_promotions_field(self, form_desc, required=False):
+        """Add a subscribe newsletter field to a form description.
+        Arguments:
+            form_desc: A form description
+        Keyword Arguments:
+            required (bool): Whether this field is required; defaults to True
+        """
+        # Translators: This is a legal document users must agree to
+        # in order to register a new account.
+        label = Text(_(u"Keep me informed of new promotions and features."))
+
+        # Translators: "Terms of service" is a legal document users must agree to
+        # in order to register a new account.
+
+        form_desc.add_field(
+            "receive_promotions",
+            label=label,
+            field_type="checkbox",
+            default=False,
+            required=required
+        )
+
 
     def _apply_third_party_auth_overrides(self, request, form_desc):
         """Modify the registration form if the user has authenticated with a third-party provider.

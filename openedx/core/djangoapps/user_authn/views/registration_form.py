@@ -1039,13 +1039,13 @@ class RegistrationFormFactory:
             field_type = 'plaintext'
 
             pp_link = marketing_link("PRIVACY")
+
+            # Modified by Developer
             label = Text(_(
-                "By creating an account, you agree to the \
-                  {terms_of_service_link_start}{terms_of_service}{terms_of_service_link_end} \
-                  and you acknowledge that {platform_name} and each Member process your personal data in accordance \
-                  with the {privacy_policy_link_start}Privacy Policy{privacy_policy_link_end}."
+                u"By creating an account, you agree to our \
+                  {terms_of_service_link_start}Terms of Use{terms_of_service_link_end} \
+                  and {privacy_policy_link_start}Privacy Policy{privacy_policy_link_end}."
             )).format(
-                platform_name=configuration_helpers.get_value("PLATFORM_NAME", settings.PLATFORM_NAME),
                 terms_of_service=terms_label,
                 terms_of_service_link_start=HTML("<a href='{terms_url}' rel='noopener' target='_blank'>").format(
                     terms_url=terms_link

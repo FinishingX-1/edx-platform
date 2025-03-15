@@ -254,11 +254,12 @@
                     };
 
                 FormView.prototype.postRender.call(this);
-                $('.optional-fields').addClass('hidden');
-                $('#toggle_optional_fields').change(function() {
-                    window.analytics.track('edx.bi.user.register.optional_fields_selected');
-                    $('.optional-fields').toggleClass('hidden');
-                });
+                // Modified by Developer
+                // $('.optional-fields').addClass('hidden');
+                // $('#toggle_optional_fields').change(function() {
+                //     window.analytics.track('edx.bi.user.register.optional_fields_selected');
+                //     $('.optional-fields').toggleClass('hidden');
+                // });
 
                 // Since the honor TOS text has a composed css selector, it is more future proof
                 // to insert the not toggled optional fields before .honor_tos_combined's parent
@@ -273,9 +274,10 @@
                 // improvement so that we don't have to show all the optional fields.
                 // xss-lint: disable=javascript-jquery-insert-into-target
                 $('.checkbox-optional_fields_toggle').insertAfter('.required-fields');
-                if (!this.hasOptionalFields) {
-                    $('.checkbox-optional_fields_toggle').addClass('hidden');
-                }
+                // if (!this.hasOptionalFields) {
+                //     $('.checkbox-optional_fields_toggle').addClass('hidden');
+                // }
+                $('.checkbox-optional_fields_toggle').addClass('hidden');
                 // xss-lint: disable=javascript-jquery-insert-into-target
                 $('.checkbox-honor_code').insertAfter('.optional-fields');
                 // xss-lint: disable=javascript-jquery-insert-into-target

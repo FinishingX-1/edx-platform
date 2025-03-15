@@ -8,7 +8,8 @@ This middleware must be placed before the LocaleMiddleware, but after
 the SessionMiddleware.
 """
 
-
+import json
+import logging
 from django.conf import settings
 from django.utils.translation.trans_real import parse_accept_lang_header
 from django.utils.deprecation import MiddlewareMixin
@@ -21,17 +22,18 @@ from openedx.core.djangoapps.user_api.preferences.api import get_user_preference
 # If django 1.7 or higher is used, the right-side can be updated with new-style codes.
 CHINESE_LANGUAGE_CODE_MAP = {
     # The following are the new-style language codes for chinese language
-    'zh-hans': 'zh-CN',  # Chinese (Simplified),
-    'zh-hans-cn': 'zh-CN',  # Chinese (Simplified, China)
-    'zh-hans-sg': 'zh-CN',  # Chinese (Simplified, Singapore)
-    'zh-hant': 'zh-TW',  # Chinese (Traditional)
-    'zh-hant-hk': 'zh-HK',  # Chinese (Traditional, Hongkong)
-    'zh-hant-mo': 'zh-TW',  # Chinese (Traditional, Macau)
-    'zh-hant-tw': 'zh-TW',  # Chinese (Traditional, Taiwan)
+    "zh-hans": "zh-CN",  # Chinese (Simplified),
+    "zh-hans-cn": "zh-CN",  # Chinese (Simplified, China)
+    "zh-hans-sg": "zh-CN",  # Chinese (Simplified, Singapore)
+    "zh-hant": "zh-TW",  # Chinese (Traditional)
+    "zh-hant-hk": "zh-HK",  # Chinese (Traditional, Hongkong)
+    "zh-hant-mo": "zh-TW",  # Chinese (Traditional, Macau)
+    "zh-hant-tw": "zh-TW",  # Chinese (Traditional, Taiwan)
     # The following are the old-style language codes that django does not recognize
-    'zh-mo': 'zh-TW',  # Chinese (Traditional, Macau)
-    'zh-sg': 'zh-CN',  # Chinese (Simplified, Singapore)
+    "zh-mo": "zh-TW",  # Chinese (Traditional, Macau)
+    "zh-sg": "zh-CN",  # Chinese (Simplified, Singapore)
 }
+log = logging.getLogger(__name__)
 
 
 def _dark_parse_accept_lang_header(accept):
@@ -62,6 +64,7 @@ class DarkLangMiddleware(MiddlewareMixin):
     This is configured by creating ``DarkLangConfig`` rows in the database,
     using the django admin site.
     """
+
     @property
     def released_langs(self):
         """
@@ -89,6 +92,27 @@ class DarkLangMiddleware(MiddlewareMixin):
         if not DarkLangConfig.current().enabled:
             return
 
+        # Modified by Developer
+        user_lang = (
+            request.user.is_authenticated
+            and get_user_preference(request.user, DARK_LANGUAGE_KEY)
+            or None
+        )
+
+        query_lang = request.GET.get("lang")
+        # import pdb;pdb.set_trace()
+        default_site_lang = query_lang or settings.LANGUAGE_CODE
+        if request.method == "PATCH" or query_lang:
+            try:
+                if query_lang:
+                    request.session["NEW_LG"] = query_lang
+                else:
+                    request_body = json.loads(request.body)
+                    if request_body.get("pref-lang", None):
+                        request.session["NEW_LG"] = request_body.get("pref-lang")
+            except Exception as e:
+                log.info("Failed to load language")
+
         self._clean_accept_headers(request)
 
     def process_response(self, request, response):
@@ -113,9 +137,9 @@ class DarkLangMiddleware(MiddlewareMixin):
         if lang_code in langs:
             match = lang_code
         else:
-            lang_prefix = lang_code.partition('-')[0]
+            lang_prefix = lang_code.partition("-")[0]
             for released_lang in langs:
-                released_prefix = released_lang.partition('-')[0]
+                released_prefix = released_lang.partition("-")[0]
                 if lang_prefix == released_prefix:
                     match = released_lang
         return match
@@ -125,8 +149,8 @@ class DarkLangMiddleware(MiddlewareMixin):
         Remove any language that is not either in ``self.released_langs`` or ``self.beta_langs`` (if enabled) or
         a territory of one of those languages.
         """
-        accept = request.META.get('HTTP_ACCEPT_LANGUAGE', None)
-        if accept is None or accept == '*':
+        accept = request.META.get("HTTP_ACCEPT_LANGUAGE", None)
+        if accept is None or accept == "*":
             return
 
         new_accept = []
@@ -138,7 +162,7 @@ class DarkLangMiddleware(MiddlewareMixin):
 
         new_accept = ", ".join(new_accept)
 
-        request.META['HTTP_ACCEPT_LANGUAGE'] = new_accept
+        request.META["HTTP_ACCEPT_LANGUAGE"] = new_accept
 
     def _activate_preview_language(self, request, response):
         """
@@ -150,9 +174,6 @@ class DarkLangMiddleware(MiddlewareMixin):
             # Get the request user's dark lang preference
             preview_lang = get_user_preference(request.user, DARK_LANGUAGE_KEY)
 
-        # User doesn't have a dark lang preference, so just return
-        if not preview_lang:
-            return
-
-        # Set the response language_cookie to the requested preview lang
-        set_language_cookie(request, response, preview_lang)
+        default_site_lang = request.session.get("NEW_LG") or settings.LANGUAGE_CODE
+        language = preview_lang or default_site_lang
+        set_language_cookie(request, response, language)
